@@ -4,7 +4,7 @@ import Graphics.Gloss
 import Graphics.Gloss.Data.ViewPort
 import Graphics.Gloss.Interface.Pure.Game
 
-
+data Movement = UpMove | DownMove | Stay deriving Show
 type Radius = Float 
 type Position = (Float, Float)
 
@@ -59,6 +59,8 @@ data PongGame = Game
   , player1 :: Float           
   , player2 :: Float
   , running :: Bool
+  , player1mov :: Movement
+  , player2mov :: Movement
   } deriving Show 
 
 -- The starting state for the game of Pong.
@@ -69,6 +71,8 @@ initialState = Game
   , player1 = 0
   , player2 = 0
   , running = True
+  , player1mov = Stay
+  , player2mov = Stay
   }
 
 -- The game state to render -> A picture of this game state.
@@ -117,9 +121,31 @@ moveBall seconds game = game { ballLoc = (x', y') }
     x' = x + vx * seconds
     y' = y + vy * seconds
 
+
+
+
+
+movePaddle :: PongGame -> PongGame
+movePaddle game = game {player1 = newPos1, player2 = newPos2}
+    where 
+      pos1 = player1 game
+      pos2 = player2 game
+      p1mov = player1mov game
+      p2mov = player2mov game
+      newPos1 = updatePos pos1 p1mov
+      newPos2 = updatePos pos2 p2mov
+
+updatePos :: Float -> Movement -> Float
+updatePos pos UpMove = pos + 1
+updatePos pos DownMove = pos - 1
+updatePos pos Stay = pos
+
+
+
+
 -- | Update the game by moving the ball and bouncing off walls.
 update :: Float -> PongGame -> PongGame
-update seconds = paddleBounce . wallBounce . moveBall seconds
+update seconds = paddleBounce . wallBounce . movePaddle . moveBall seconds
 
 -- | Detect a collision with a paddle. Upon collisions,
 -- change the velocity of the ball to bounce it off the paddle.
@@ -167,14 +193,27 @@ padleCollision (x, y) (px, py) =
 
 -- | Respond to key events.
 handleKeys :: Event -> PongGame -> PongGame
+-- Restart and pause
 handleKeys (EventKey (Char 's') _ _ _) game = game { ballLoc = (0, 0) }
 handleKeys (EventKey (Char 'p') Down _ _) game = 
   game { running = runState}
     where
       runState = not $ running game
+-- Movements Player1
+handleKeys (EventKey (SpecialKey KeyUp) Down _ _) game = game {player1mov = UpMove}
+handleKeys (EventKey (SpecialKey KeyUp) Up _ _) game = game {player1mov = Stay}
+handleKeys (EventKey (SpecialKey KeyDown) Down _ _) game = game {player1mov = DownMove}
+handleKeys (EventKey (SpecialKey KeyDown) Up _ _) game = game {player1mov = Stay}
+
+-- Movements Player2
+handleKeys (EventKey (Char 'q') Down _ _) game = game {player2mov = UpMove}
+handleKeys (EventKey (Char 'q') Up _ _) game = game {player2mov = Stay}
+handleKeys (EventKey (Char 'a') Down _ _) game = game {player2mov = DownMove}
+handleKeys (EventKey (Char 'a') Up _ _) game = game {player2mov = Stay}
+
 handleKeys _ game = game
 
-                    
+
 main :: IO ()
 main = play window background fps initialState render handleKeys update
  
