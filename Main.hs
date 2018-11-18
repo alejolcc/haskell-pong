@@ -57,7 +57,8 @@ data PongGame = Game
   { ballLoc :: (Float, Float)  
   , ballVel :: (Float, Float)   
   , player1 :: Float           
-  , player2 :: Float           
+  , player2 :: Float
+  , running :: Bool
   } deriving Show 
 
 -- The starting state for the game of Pong.
@@ -67,6 +68,7 @@ initialState = Game
   , ballVel = (150, 0)
   , player1 = 0
   , player2 = 0
+  , running = True
   }
 
 -- The game state to render -> A picture of this game state.
@@ -104,6 +106,7 @@ render game =
 -- The initial game state
 -- A new game state with an updated ball position
 moveBall :: Float -> PongGame -> PongGame 
+moveBall _ game@(Game {running=False}) = game
 moveBall seconds game = game { ballLoc = (x', y') }
   where
     -- Old locations and velocities.
@@ -165,7 +168,10 @@ padleCollision (x, y) (px, py) =
 -- | Respond to key events.
 handleKeys :: Event -> PongGame -> PongGame
 handleKeys (EventKey (Char 's') _ _ _) game = game { ballLoc = (0, 0) }
-handleKeys (EventKey (Char 'a') _ _ _) game = game { player1 = 50 }
+handleKeys (EventKey (Char 'p') Down _ _) game = 
+  game { running = runState}
+    where
+      runState = not $ running game
 handleKeys _ game = game
 
                     
